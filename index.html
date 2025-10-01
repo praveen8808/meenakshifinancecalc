@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interest Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#f6f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --brand:#2563eb; --border:#e5e7eb; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg); color: var(--text); display: grid; place-items: start;
+      min-height: 100vh; padding: 24px;
+    }
+    .container {
+      width: 100%; max-width: 520px; margin: 0 auto; background: var(--card);
+      border-radius: 16px; box-shadow: 0 10px 30px rgba(15,23,42,.08);
+      padding: 20px;
+    }
+    .row { display: grid; gap: 12px; }
+    @media (min-width: 560px) { .row.grid-2 { grid-template-columns: 1fr 1fr; } }
+    h1 { font-size: 22px; margin: 0 0 8px; text-align: center; }
+    .topbar { display:flex; justify-content: space-between; align-items:center; margin-bottom: 8px; }
+    .lang { display:flex; gap:8px; align-items:center; }
+    label { font-size: 14px; margin-bottom: 4px; display:block; }
+    input, select, button {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
+      background: #fff;
+    }
+    button { background: var(--brand); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .error { color: #b91c1c; font-size: 12px; margin-top: 4px; }
+    .results {
+      margin-top: 16px; border: 1px solid var(--border); border-radius: 12px; padding: 14px; background:#fafafa;
+    }
+    .kv { display:flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eaeaea; }
+    .kv:last-child { border-bottom: 0; }
+    .note { font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.4; }
+    .flex { display:flex; gap:10px; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="container" role="main" aria-labelledby="title">
+    <div class="topbar">
+      <div style="font-weight:600;">🧮</div>
+      <div class="lang">
+        <label for="language" id="lblLang" class="hint">Language</label>
+        <select id="language" aria-label="Language">
+          <option value="en">English</option>
+          <option value="ta">தமிழ்</option>
+        </select>
+      </div>
+    </div>
+
+    <h1 id="title">Interest Calculator</h1>
+
+    <div class="row">
+      <div>
+        <label for="amount" id="lblAmount">Amount</label>
+        <input id="amount" type="number" inputmode="decimal" placeholder="e.g., 10000" min="0" step="0.01" />
+        <div id="errAmount" class="error" aria-live="polite"></div>
+      </div>
+
+      <div class="row grid-2">
+        <div>
+          <label for="rate" id="lblRate">Rate of Interest (%)</label>
+          <input id="rate" type="number" inputmode="decimal" placeholder="e.g., 1" min="0" step="0.0001" />
+          <div id="errRate" class="error" aria-live="polite"></div>
+        </div>
+        <div>
+          <label for="days" id="lblDays">Number of Days</label>
+          <input id="days" type="number" inputmode="numeric" placeholder="e.g., 45" min="0" step="1" />
+          <div id="errDays" class="error" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="row grid-2">
+        <div>
+          <label for="basis" id="lblBasis">Rate Basis</label>
+          <select id="basis">
+            <option value="perAnnum">Per Annum (Yearly)</option>
+            <option value="perMonth">Per Month</option>
+            <option value="perDay">Per Day</option>
+          </select>
+        </div>
+        <div id="dayCountWrap">
+          <label for="dayCount" id="lblDayCount">Day Count Basis</label>
+          <select id="dayCount">
+            <option value="A365">Actual/365</option>
+            <option value="A360">Actual/360</option>
+          </select>
+          <div class="hint" id="hintDayCount">Used only for per-annum rates.</div>
+        </div>
+      </div>
+
+      <div class="row grid-2">
+        <div>
+          <label for="currency" id="lblCurrency">Currency</label>
+          <select id="currency">
+            <option value="INR">INR</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+        <div>
+          <label for="locale" id="lblLocale">Format</label>
+          <select id="locale">
+            <option value="en-IN">en-IN</option>
+            <option value="ta-IN">ta-IN</option>
+            <option value="en-US">en-US</option>
+            <option value="en-GB">en-GB</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex">
+        <button id="btnCalc" disabled>Calculate</button>
+        <button id="btnReset" type="button">Reset</button>
+      </div>
+
+      <div class="results hidden" id="results" aria-live="polite">
+        <div class="kv"><div id="outPrincipalLbl">Principal</div><div id="outPrincipalVal">—</div></div>
+        <div class="kv"><div id="outRateLbl">Rate</div><div id="outRateVal">—</div></div>
+        <div class="kv"><div id="outDaysLbl">Days</div><div id="outDaysVal">—</div></div>
+        <div class="kv"><div id="outBasisLbl">Basis</div><div id="outBasisVal">—</div></div>
+        <div class="kv"><div id="outInterestLbl">Interest</div><div id="outInterestVal">—</div></div>
+        <div class="kv"><div id="outTotalLbl">Total (Principal + Interest)</div><div id="outTotalVal">—</div></div>
+        <div class="note" id="formulaNote">
+          Formula used: interest = principal × (rate/100) × time
+        </div>
+      </div>
+
+      <div class="note" id="howNote">
+        How totals are computed:
+        Per Annum → t = days/365 (or 360). Per Month → t = days/30. Per Day → t = days (rate treated as daily).
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- i18n strings ---
+    const translations = {
+      en: {
+        langLabel: "Language",
+        title: "Interest Calculator",
+        amount: "Amount",
+        rate: "Rate of Interest (%)",
+        days: "Number of Days",
+        basis: "Rate Basis",
+        perAnnum: "Per Annum (Yearly)",
+        perMonth: "Per Month",
+        perDay: "Per Day",
+        dayCount: "Day Count Basis",
+        dayCountHint: "Used only for per-annum rates.",
+        currency: "Currency",
+        locale: "Format",
+        calculate: "Calculate",
+        reset: "Reset",
+        outPrincipal: "Principal",
+        outRate: "Rate",
+        outDays: "Days",
+        outBasis: "Basis",
+        outInterest: "Interest",
+        outTotal: "Total (Principal + Interest)",
+        formulaPrefix: "Formula used",
+        howNote: "How totals are computed: Per Annum → t = days/365 (or 360). Per Month → t = days/30. Per Day → t = days (rate treated as daily).",
+        errAmount: "Enter a valid amount > 0.",
+        errRate: "Enter a valid rate ≥ 0.",
+        errDays: "Enter a whole number of days ≥ 0."
+      },
+      ta: {
+        langLabel: "மொழி",
+        title: "வட்டி கணக்கிடும் பயன்பாடு",
+        amount: "தொகை",
+        rate: "வட்டி விகிதம் (%)",
+        days: "நாட்களின் எண்ணிக்கை",
+        basis: "வட்டி அடிப்படை",
+        perAnnum: "ஒரு ஆண்டு (Yearly)",
+        perMonth: "ஒரு மாதம்",
+        perDay: "ஒரு நாள்",
+        dayCount: "நாள் கணக்கீடு முறை",
+        dayCountHint: "ஆண்டு அடிப்படைக்கு மட்டும் பயன்படும்.",
+        currency: "நாணயம்",
+        locale: "வடிவம்",
+        calculate: "கணக்கிடு",
+        reset: "மீட்டமை",
+        outPrincipal: "முதல்தொகை",
+        outRate: "வட்டி விகிதம்",
+        outDays: "நாட்கள்",
+        outBasis: "அடிப்படை",
+        outInterest: "வட்டி",
+        outTotal: "மொத்தம் (முதல்தொகை + வட்டி)",
+        formulaPrefix: "பயன்படுத்திய சூத்திரம்",
+        howNote: "மொத்தம் கணக்கிடும் முறை: ஆண்டு → t = நாட்கள்/365 (அல்லது 360). மாதம் → t = நாட்கள்/30. நாள் → t = நாட்கள் (வட்டி தினசரியாகப் பொருள்).",
+        errAmount: "0-ஐ விட அதிகமான சரியான தொகையை உள்ளிடவும்.",
+        errRate: "0 அல்லது அதற்கு மேற்பட்ட சரியான விகிதத்தை உள்ளிடவும்.",
+        errDays: "0 அல்லது அதற்கு மேற்பட்ட முழு நாட்களை உள்ளிடவும்."
+      }
+    };
+
+    // --- state helpers ---
+    const els = {
+      lang: document.getElementById('language'),
+      title: document.getElementById('title'),
+      lblLang: document.getElementById('lblLang'),
+      amount: document.getElementById('amount'),
+      rate: document.getElementById('rate'),
+      days: document.getElementById('days'),
+      basis: document.getElementById('basis'),
+      dayCountWrap: document.getElementById('dayCountWrap'),
+      dayCount: document.getElementById('dayCount'),
+      currency: document.getElementById('currency'),
+      locale: document.getElementById('locale'),
+      btnCalc: document.getElementById('btnCalc'),
+      btnReset: document.getElementById('btnReset'),
+      lblAmount: document.getElementById('lblAmount'),
+      lblRate: document.getElementById('lblRate'),
+      lblDays: document.getElementById('lblDays'),
+      lblBasis: document.getElementById('lblBasis'),
+      lblDayCount: document.getElementById('lblDayCount'),
+      hintDayCount: document.getElementById('hintDayCount'),
+      lblCurrency: document.getElementById('lblCurrency'),
+      lblLocale: document.getElementById('lblLocale'),
+      errAmount: document.getElementById('errAmount'),
+      errRate: document.getElementById('errRate'),
+      errDays: document.getElementById('errDays'),
+      results: document.getElementById('results'),
+      outPrincipalLbl: document.getElementById('outPrincipalLbl'),
+      outRateLbl: document.getElementById('outRateLbl'),
+      outDaysLbl: document.getElementById('outDaysLbl'),
+      outBasisLbl: document.getElementById('outBasisLbl'),
+      outInterestLbl: document.getElementById('outInterestLbl'),
+      outTotalLbl: document.getElementById('outTotalLbl'),
+      outPrincipalVal: document.getElementById('outPrincipalVal'),
+      outRateVal: document.getElementById('outRateVal'),
+      outDaysVal: document.getElementById('outDaysVal'),
+      outBasisVal: document.getElementById('outBasisVal'),
+      outInterestVal: document.getElementById('outInterestVal'),
+      outTotalVal: document.getElementById('outTotalVal'),
+      formulaNote: document.getElementById('formulaNote'),
+      howNote: document.getElementById('howNote'),
+    };
+
+    // localStorage keys
+    const LS_KEY = 'interestCalc:v1';
+
+    function saveState() {
+      const state = {
+        lang: els.lang.value,
+        amount: els.amount.value,
+        rate: els.rate.value,
+        days: els.days.value,
+        basis: els.basis.value,
+        dayCount: els.dayCount.value,
+        currency: els.currency.value,
+        locale: els.locale.value
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+    }
+
+    function loadState() {
+      const s = localStorage.getItem(LS_KEY);
+      if (!s) return;
+      try {
+        const st = JSON.parse(s);
+        Object.entries(st).forEach(([k,v]) => {
+          if (els[k]) els[k].value = v;
+        });
+      } catch {}
+    }
+
+    // number formatting
+    function formatMoney(value, currency, locale) {
+      try {
+        return new Intl.NumberFormat(locale || 'en-IN', {
+          style: 'currency', currency
+        }).format(value);
+      } catch {
+        return value.toFixed(2);
+      }
+    }
+
+    // simple decimal handling to reduce float drift
+    function toNum(x){ return Number(x); }
+    function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+
+    function timeFactor(days, basis, dayCount){
+      const d = toNum(days);
+      if (basis === 'perAnnum') {
+        return d / (dayCount === 'A360' ? 360 : 365);
+      } else if (basis === 'perMonth') {
+        return d / 30;
+      } else { // perDay
+        return d; // rate interpreted as daily
+      }
+    }
+
+    function calcSimpleInterest(principal, ratePct, days, basis, dayCount){
+      const p = toNum(principal);
+      const r = toNum(ratePct) / 100;
+      const t = timeFactor(days, basis, dayCount);
+      return p * r * t; // may be very small for per-annum small periods
+    }
+
+    function validate() {
+      const lang = translations[els.lang.value] || translations.en;
+      let ok = true;
+
+      if (!(els.amount.value && toNum(els.amount.value) > 0)) {
+        els.errAmount.textContent = lang.errAmount; ok = false;
+      } else { els.errAmount.textContent = ''; }
+
+      if (!(els.rate.value !== '' && toNum(els.rate.value) >= 0)) {
+        els.errRate.textContent = lang.errRate; ok = false;
+      } else { els.errRate.textContent = ''; }
+
+      if (!(Number.isInteger(Number(els.days.value)) && toNum(els.days.value) >= 0)) {
+        els.errDays.textContent = lang.errDays; ok = false;
+      } else { els.errDays.textContent = ''; }
+
+      els.btnCalc.disabled = !ok;
+      return ok;
+    }
+
+    // i18n apply
+    function setLanguage(langCode){
+      const tr = translations[langCode] || translations.en;
+      els.lblLang.textContent = tr.langLabel;
+      els.title.textContent = tr.title;
+      els.lblAmount.textContent = tr.amount;
+      els.lblRate.textContent = tr.rate;
+      els.lblDays.textContent = tr.days;
+      els.lblBasis.textContent = tr.basis;
+      els.lblDayCount.textContent = tr.dayCount;
+      els.hintDayCount.textContent = tr.dayCountHint;
+      els.lblCurrency.textContent = tr.currency;
+      els.lblLocale.textContent = tr.locale;
+      els.btnCalc.textContent = tr.calculate;
+      els.btnReset.textContent = tr.reset;
+      els.outPrincipalLbl.textContent = tr.outPrincipal;
+      els.outRateLbl.textContent = tr.outRate;
+      els.outDaysLbl.textContent = tr.outDays;
+      els.outBasisLbl.textContent = tr.outBasis;
+      els.outInterestLbl.textContent = tr.outInterest;
+      els.outTotalLbl.textContent = tr.outTotal;
+      els.formulaNote.textContent = `${tr.formulaPrefix}: interest = principal × (rate/100) × time`;
+      els.howNote.textContent = tr.howNote;
+
+      // Update basis option labels
+      els.basis.querySelector('option[value="perAnnum"]').textContent = tr.perAnnum;
+      els.basis.querySelector('option[value="perMonth"]').textContent = tr.perMonth;
+      els.basis.querySelector('option[value="perDay"]').textContent = tr.perDay;
+
+      // Re-render results if visible
+      if (!els.results.classList.contains('hidden')) calculateAndRender();
+    }
+
+    function toggleDayCountVisibility(){
+      els.dayCountWrap.style.display = (els.basis.value === 'perAnnum') ? '' : 'none';
+    }
+
+    function calculateAndRender(){
+      if (!validate()) return;
+
+      const principal = toNum(els.amount.value);
+      const ratePct = toNum(els.rate.value);
+      const days = toNum(els.days.value);
+      const basis = els.basis.value;
+      const dayCount = els.dayCount.value;
+      const currency = els.currency.value;
+      const locale = els.locale.value;
+
+      const interest = calcSimpleInterest(principal, ratePct, days, basis, dayCount);
+      const total = principal + interest;
+
+      const tr = translations[els.lang.value] || translations.en;
+
+      els.outPrincipalVal.textContent = formatMoney(round2(principal), currency, locale);
+      // Construct human-readable rate basis text
+      const basisMap = {
+        perAnnum: tr.perAnnum,
+        perMonth: tr.perMonth,
+        perDay: tr.perDay
+      };
+      els.outRateVal.textContent = `${ratePct}%`;
+      els.outDaysVal.textContent = `${days}`;
+      els.outBasisVal.textContent = basisMap[basis] + (basis === 'perAnnum' ? (els.dayCount.value === 'A360' ? ' (Actual/360)' : ' (Actual/365)') : '');
+      els.outInterestVal.textContent = formatMoney(round2(interest), currency, locale);
+      els.outTotalVal.textContent = formatMoney(round2(total), currency, locale);
+
+      els.results.classList.remove('hidden');
+      saveState();
+    }
+
+    // listeners
+    [els.amount, els.rate, els.days, els.basis, els.dayCount, els.currency, els.locale].forEach(el => {
+      el.addEventListener('input', () => { validate(); saveState(); });
+      el.addEventListener('change', () => { validate(); toggleDayCountVisibility(); saveState(); });
+    });
+
+    els.btnCalc.addEventListener('click', calculateAndRender);
+    els.btnReset.addEventListener('click', () => {
+      els.amount.value = '';
+      els.rate.value = '';
+      els.days.value = '';
+      els.basis.value = 'perAnnum';
+      els.dayCount.value = 'A365';
+      els.currency.value = 'INR';
+      els.locale.value = 'en-IN';
+      els.errAmount.textContent = els.errRate.textContent = els.errDays.textContent = '';
+      els.results.classList.add('hidden');
+      validate();
+      toggleDayCountVisibility();
+      saveState();
+    });
+
+    els.lang.addEventListener('change', () => { setLanguage(els.lang.value); saveState(); });
+
+    // Initial language (auto-detect; Tamil if ta-*)
+    function autodetectLang(){
+      const nav = (navigator.language || '').toLowerCase();
+      if (nav.startsWith('ta')) return 'ta';
+      return 'en';
+    }
+
+    // Prefill via URL query: ?amount=10000&rate=1&days=45&basis=perMonth
+    function prefillFromQuery(){
+      const q = new URLSearchParams(location.search);
+      if (q.has('amount')) els.amount.value = q.get('amount');
+      if (q.has('rate')) els.rate.value = q.get('rate');
+      if (q.has('days')) els.days.value = q.get('days');
+      if (q.has('basis')) els.basis.value = q.get('basis');
+      if (q.has('dayCount')) els.dayCount.value = q.get('dayCount');
+      if (q.has('currency')) els.currency.value = q.get('currency');
+      if (q.has('locale')) els.locale.value = q.get('locale');
+    }
+
+    // Boot
+    loadState();
+    prefillFromQuery();
+    toggleDayCountVisibility();
+
+    // set language from saved state or autodetect
+    if (!localStorage.getItem(LS_KEY)) {
+      els.lang.value = autodetectLang();
+    } else {
+      const s = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      if (s.lang) els.lang.value = s.lang;
+    }
+    setLanguage(els.lang.value);
+    validate();
+
+    // Example test (open console and run runExamples())
+    window.runExamples = function(){
+      const approxEq = (a,b,eps=0.01)=>Math.abs(a-b)<=eps;
+      // Example 1: 10,000 @ 1% for 45 days, per month basis ⇒ interest = 10000 * 0.01 * (45/30) = 150
+      let i = calcSimpleInterest(10000, 1, 45, 'perMonth', 'A365');
+      console.log('Per Month simple expected 150 =>', i, approxEq(i,150));
+
+      // Example 2: per annum A/365 ⇒ 10000*0.01*(45/365) ≈ 12.33
+      i = calcSimpleInterest(10000, 1, 45, 'perAnnum', 'A365');
+      console.log('Per Annum A/365 expected ~12.33 =>', i, approxEq(i,12.33));
+
+      // Example 3: per day (rate is daily) ⇒ 10000*0.01*45 = 4500
+      i = calcSimpleInterest(10000, 1, 45, 'perDay', 'A365');
+      console.log('Per Day (daily rate) expected 4500 =>', i, approxEq(i,4500));
+    };
+  </script>
+</body>
+</html>
