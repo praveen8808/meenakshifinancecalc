@@ -5,43 +5,23 @@
   <title>Meenakshi Finance - வட்டி கணக்கிடும் பயன்பாடு</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      margin: 0; font-family: Arial, sans-serif;
-      background: #f2f2f2; color: #222;
-      display: flex; justify-content: center; padding: 20px;
-    }
-    .container {
-      width: 100%; max-width: 500px; background: white;
-      padding: 20px; border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center; margin-bottom: 10px; font-size: 26px;
-      color: #2c3e50;
-    }
-    h2 {
-      text-align: center; margin-top: 0; font-size: 20px; color: #333;
-    }
-    label {
-      font-weight: bold; font-size: 16px; display: block; margin-top: 15px;
-    }
-    input, select, button {
-      width: 100%; padding: 12px; font-size: 16px;
-      border: 1px solid #ccc; border-radius: 8px; margin-top: 5px;
-    }
-    button {
-      background: #0066cc; color: white; border: none; margin-top: 20px;
-      cursor: pointer; font-weight: bold; font-size: 18px;
-    }
-    button:hover { background: #004999; }
-    .results {
-      margin-top: 20px; padding: 15px;
-      border: 1px solid #ccc; border-radius: 8px; background: #fafafa;
-    }
-    .kv { display: flex; justify-content: space-between; padding: 8px 0; font-size: 18px; }
-    .highlight { font-size: 22px; font-weight: bold; color: #000; }
-    .note { margin-top: 12px; font-size: 14px; color: #555; }
-    .error { color: red; font-size: 14px; margin-top: 4px; }
+    body { margin:0; font-family:Arial, sans-serif; background:#f2f2f2; color:#222; display:flex; justify-content:center; padding:20px; }
+    .container { width:100%; max-width:640px; background:#fff; padding:20px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.08); }
+    h1 { text-align:center; margin:0 0 8px; font-size:28px; color:#2c3e50; }
+    h2 { text-align:center; margin:0 0 16px; font-size:20px; color:#333; }
+    label { font-weight:700; font-size:18px; display:block; margin-top:14px; }
+    input, button { width:100%; padding:12px; font-size:16px; border:1px solid #ccc; border-radius:8px; margin-top:6px; }
+    input[readonly] { background:#f7f7f7; }
+    .hint { font-size:14px; color:#555; margin-top:4px; }
+    .error { color:#b91c1c; font-size:14px; margin-top:4px; }
+    .results { margin-top:20px; border:1px solid #e5e7eb; border-radius:12px; padding:14px; background:#fafafa; }
+    .kv { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed #eaeaea; font-size:17px; }
+    .kv:last-child { border-bottom:0; }
+    .section { background:#fff; border:1px solid #eaeaea; border-radius:10px; padding:12px; margin-top:12px; }
+    .sec-title { font-weight:700; font-size:16px; margin-bottom:8px; }
+    .highlight { font-size:22px; font-weight:800; color:#000; }
+    .subtle { font-size:15px; color:#444; }
+    .breakdown { font-size:14px; color:#555; margin-top:6px; }
   </style>
 </head>
 <body>
@@ -49,109 +29,207 @@
     <h1>Meenakshi Finance</h1>
     <h2>வட்டி கணக்கிடும் பயன்பாடு</h2>
 
+    <!-- Amount -->
     <label for="amount">தொகை</label>
-    <input id="amount" type="number" placeholder="உதா: 10000" />
+    <input id="amount" type="number" placeholder="உதா: 43000" />
     <div id="errAmount" class="error"></div>
 
+    <!-- Interest (fixed) -->
     <label for="rate">வட்டி விகிதம் (%)</label>
-    <input id="rate" type="number" placeholder="உதா: 1" />
-    <div id="errRate" class="error"></div>
+    <input id="rate" type="number" value="1.25" readonly />
+    <div class="hint">விகிதம் எப்போதும் 1.25% (மாதாந்திர அடிப்படை)</div>
 
-    <label for="days">நாட்கள்</label>
-    <input id="days" type="number" placeholder="உதா: 45" />
-    <div id="errDays" class="error"></div>
+    <!-- Dates -->
+    <label for="startDate">அடகு பிடிப்பு தேதி</label>
+    <input id="startDate" type="date" />
+    <div id="errStart" class="error"></div>
 
-    <label for="basis">வட்டி அடிப்படை</label>
-    <select id="basis">
-      <option value="perAnnum">ஒரு ஆண்டு (வருடாந்திர)</option>
-      <option value="perMonth">ஒரு மாதம்</option>
-      <option value="perDay">ஒரு நாள்</option>
-    </select>
+    <label for="today">இன்று</label>
+    <input id="today" type="date" readonly />
+    <div class="hint">இன்று தானாக நிரப்பப்படும் (மாற்ற முடியாது).</div>
 
-    <button id="btnCalc">கணக்கிடு</button>
-    <button id="btnReset" type="button">மீட்டமை</button>
+    <!-- Auto days + duration -->
+    <label>நாட்கள் (தானாக கணக்கிடப்பட்டது)</label>
+    <input id="autoDays" type="number" readonly />
+    <div id="durationLine" class="hint"></div>
 
+    <!-- Results -->
     <div class="results" id="results" style="display:none;">
-      <div class="kv"><div>முதல்தொகை</div><div id="outPrincipalVal">—</div></div>
-      <div class="kv"><div>வட்டி விகிதம்</div><div id="outRateVal">—</div></div>
-      <div class="kv"><div>நாட்கள்</div><div id="outDaysVal">—</div></div>
-      <div class="kv"><div>அடிப்படை</div><div id="outBasisVal">—</div></div>
-      <div class="kv highlight"><div>வட்டி</div><div id="outInterestVal">—</div></div>
-      <div class="kv highlight"><div>மொத்தம் (முதல்தொகை + வட்டி)</div><div id="outTotalVal">—</div></div>
-    </div>
+      <div class="kv"><div>முதல்தொகை</div><div id="outPrincipal">—</div></div>
+      <div class="kv"><div>வட்டி விகிதம்</div><div id="outRate">—</div></div>
+      <div class="kv"><div>மொத்த நாட்கள்</div><div id="outDays">—</div></div>
 
-    <div class="note">
-      மொத்தம் கணக்கிடும் முறை:  
-      ஆண்டு → நாட்கள்/365.  
-      மாதம் → நாட்கள்/30.  
-      நாள் → நாட்கள் (வட்டி தினசரி).  
+      <div class="section">
+        <div class="sec-title">தினசரி (Daily)</div>
+        <div class="breakdown" id="dyBreakdown">—</div>
+        <div class="kv"><div>மொத்த வட்டி</div><div id="dyInterest" class="highlight">—</div></div>
+        <div class="kv"><div class="subtle">மொத்தம் (முதல்தொகை + வட்டி)</div><div id="dyTotal" class="subtle">—</div></div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">மாதாந்திர (30 நாட்கள்/மாதம்)</div>
+        <div class="breakdown" id="moBreakdown">—</div>
+        <div class="kv"><div>மொத்த வட்டி</div><div id="moInterest" class="highlight">—</div></div>
+        <div class="kv"><div class="subtle">மொத்தம் (முதல்தொகை + வட்டி)</div><div id="moTotal" class="subtle">—</div></div>
+      </div>
+
+      <div class="section">
+        <div class="sec-title">வருடாந்திர (365 நாட்கள்/வருடம்)</div>
+        <div class="breakdown" id="yrBreakdown">—</div>
+        <div class="kv"><div>மொத்த வட்டி</div><div id="yrInterest" class="highlight">—</div></div>
+        <div class="kv"><div class="subtle">மொத்தம் (முதல்தொகை + வட்டி)</div><div id="yrTotal" class="subtle">—</div></div>
+      </div>
     </div>
   </div>
 
 <script>
-function calcInterest(principal, ratePct, days, basis){
-  const p = Number(principal), r = Number(ratePct)/100, d = Number(days);
-  let t = 0;
-  if (basis === 'perAnnum') t = d / 365;   // always 365 days
-  else if (basis === 'perMonth') t = d / 30;
-  else t = d; // per day
-  return p * r * t;
-}
-
-function formatINR(value){
-  return new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(value);
-}
-
-document.getElementById('btnCalc').addEventListener('click', ()=>{
-  const amount = document.getElementById('amount').value;
-  const rate = document.getElementById('rate').value;
-  const days = document.getElementById('days').value;
-  const basis = document.getElementById('basis').value;
-
-  // Validation
-  let valid = true;
-  document.getElementById('errAmount').innerText = "";
-  document.getElementById('errRate').innerText = "";
-  document.getElementById('errDays').innerText = "";
-
-  if(!amount || Number(amount) <= 0){
-    document.getElementById('errAmount').innerText = "சரியான தொகையை உள்ளிடவும் (0-ஐ விட அதிகமாக).";
-    valid = false;
+  // --- Helpers ---
+  function formatINR(v){ return new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(v); }
+  function r2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+  function toDateInputValue(d){ const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function diffDays(start, end){
+    const ms=24*60*60*1000;
+    const s=Date.UTC(start.getFullYear(),start.getMonth(),start.getDate());
+    const e=Date.UTC(end.getFullYear(),end.getMonth(),end.getDate());
+    return Math.floor((e - s)/ms);
   }
-  if(rate === "" || Number(rate) < 0){
-    document.getElementById('errRate').innerText = "சரியான விகிதத்தை உள்ளிடவும் (0 அல்லது அதற்கு மேல்).";
-    valid = false;
+  function breakdownMonths(days){
+    const m = Math.floor(days/30);
+    const d = days % 30;
+    return {m, d};
   }
-  if(days === "" || Number(days) < 0){
-    document.getElementById('errDays').innerText = "சரியான நாட்களை உள்ளிடவும் (0 அல்லது அதற்கு மேல்).";
-    valid = false;
+  function breakdownYears(days){
+    const y = Math.floor(days/365);
+    const rem = days % 365;
+    const m = Math.floor(rem/30);
+    const d = rem % 30;
+    return {y, m, d};
+  }
+  function humanMD(days){
+    const {m,d} = breakdownMonths(days);
+    if (m>0 && d>0) return `${m} மாதம் ${d} நாள்`;
+    if (m>0) return `${m} மாதம்`;
+    return `${d} நாள்`;
+  }
+  function humanYMD(days){
+    const {y,m,d} = breakdownYears(days);
+    let bits = [];
+    bits.push(`${y} வருடம்`);
+    bits.push(`${m} மாதம்`);
+    bits.push(`${d} நாள்`);
+    return bits.join(' ');
   }
 
-  if(!valid) return;
+  // --- State / DOM ---
+  const els = {
+    amount: document.getElementById('amount'),
+    startDate: document.getElementById('startDate'),
+    today: document.getElementById('today'),
+    autoDays: document.getElementById('autoDays'),
+    errAmount: document.getElementById('errAmount'),
+    errStart: document.getElementById('errStart'),
+    results: document.getElementById('results'),
+    outPrincipal: document.getElementById('outPrincipal'),
+    outRate: document.getElementById('outRate'),
+    outDays: document.getElementById('outDays'),
+    dyBreakdown: document.getElementById('dyBreakdown'),
+    moBreakdown: document.getElementById('moBreakdown'),
+    yrBreakdown: document.getElementById('yrBreakdown'),
+    dyInterest: document.getElementById('dyInterest'),
+    dyTotal: document.getElementById('dyTotal'),
+    moInterest: document.getElementById('moInterest'),
+    moTotal: document.getElementById('moTotal'),
+    yrInterest: document.getElementById('yrInterest'),
+    yrTotal: document.getElementById('yrTotal'),
+  };
 
-  const interest = calcInterest(amount, rate, days, basis);
-  const total = Number(amount) + interest;
+  // Init today + prevent future start date
+  function setTodayAndMax(){
+    const now = new Date();
+    const todayStr = toDateInputValue(now);
+    els.today.value = todayStr;
+    els.startDate.setAttribute('max', todayStr);
+  }
 
-  document.getElementById('outPrincipalVal').innerText = formatINR(amount);
-  document.getElementById('outRateVal').innerText = rate + "%";
-  document.getElementById('outDaysVal').innerText = days;
-  document.getElementById('outBasisVal').innerText = document.getElementById('basis').selectedOptions[0].text;
-  document.getElementById('outInterestVal').innerText = formatINR(interest);
-  document.getElementById('outTotalVal').innerText = formatINR(total);
+  function recalcDays(){
+    const sVal = els.startDate.value;
+    if (!sVal){ els.autoDays.value = ""; return; }
+    const s = new Date(sVal);
+    const t = new Date(els.today.value);
+    let days = diffDays(s,t);
+    if (days < 0) days = 0;
+    els.autoDays.value = days;
+  }
 
-  document.getElementById('results').style.display = 'block';
-});
+  function validate(){
+    let ok = true;
+    els.errAmount.textContent = "";
+    els.errStart.textContent = "";
 
-document.getElementById('btnReset').addEventListener('click', ()=>{
-  document.getElementById('amount').value = "";
-  document.getElementById('rate').value = "";
-  document.getElementById('days').value = "";
-  document.getElementById('basis').value = "perAnnum";
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('errAmount').innerText = "";
-  document.getElementById('errRate').innerText = "";
-  document.getElementById('errDays').innerText = "";
-});
+    if (!(els.amount.value && Number(els.amount.value) > 0)){
+      els.errAmount.textContent = "சரியான தொகையை உள்ளிடவும் (0-ஐ விட அதிகமாக)."; ok = false;
+    }
+    if (!els.startDate.value){
+      els.errStart.textContent = "அடகு பிடிப்பு தேதியைத் தேர்வுசெய்யவும்."; ok = false;
+    } else {
+      const s = new Date(els.startDate.value), t = new Date(els.today.value);
+      if (s > t){ els.errStart.textContent = "அடகு தேதி வருங்காலத்தில் இருக்கக்கூடாது."; ok = false; }
+    }
+    return ok;
+  }
+
+  function calculateAndRender(){
+    setTodayAndMax();
+    recalcDays();
+
+    if (!validate()){ els.results.style.display = 'none'; return; }
+
+    const P = Number(els.amount.value);
+    const ratePct = 1.25;
+    const days = Number(els.autoDays.value || 0);
+
+    // Base amounts per your logic
+    const monthly = P * (ratePct/100); // 30-day month
+    const daily   = monthly / 30;
+    const yearly  = daily * 365;
+
+    // Totals for elapsed days
+    const intDays = daily   * days;      // exact days
+    const intMons = monthly * (days/30); // months-equivalent
+    const intYear = yearly  * (days/365);// years-equivalent
+
+    // Header facts
+    els.outPrincipal.textContent = formatINR(P);
+    els.outRate.textContent = `${ratePct}%`;
+    els.outDays.textContent = `${days}`;
+
+    // Breakdowns
+    els.dyBreakdown.textContent = `நாட்கள்: ${days} நாள்`;
+    els.moBreakdown.textContent = `மாத அளவு: ${humanMD(days)} (30 நாள்/மாதம்)`;
+    els.yrBreakdown.textContent = `வருட அளவு: ${humanYMD(days)} (365 நாள்/வருடம், 30 நாள்/மாதம்)`;
+
+    // Numbers
+    const r = r2;
+    els.dyInterest.textContent = formatINR(r(intDays));
+    els.dyTotal.textContent    = formatINR(r(P + intDays));
+
+    els.moInterest.textContent = formatINR(r(intMons));
+    els.moTotal.textContent    = formatINR(r(P + intMons));
+
+    els.yrInterest.textContent = formatINR(r(intYear));
+    els.yrTotal.textContent    = formatINR(r(P + intYear));
+
+    els.results.style.display = 'block';
+  }
+
+  // Live updates
+  ['input','change'].forEach(evt=>{
+    els.amount.addEventListener(evt, calculateAndRender);
+    els.startDate.addEventListener(evt, calculateAndRender);
+  });
+
+  // Boot
+  window.addEventListener('load', ()=>{ setTodayAndMax(); calculateAndRender(); });
 </script>
 </body>
 </html>
