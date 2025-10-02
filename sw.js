@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meenakshi-ghp-v2';
+const CACHE_NAME = 'meenakshi-qr-duration-v2';
 const OFFLINE_URLS = [
   './',
   './index.html',

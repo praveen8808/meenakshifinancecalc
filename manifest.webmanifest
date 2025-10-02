@@ -1,7 +1,7 @@
 {
-  "name": "Meenakshi Finance - வட்டி கணக்கிடும் பயன்பாடு",
-  "short_name": "Meenakshi",
-  "description": "Tamil-first interest calculator (1.25% monthly base). Days/Months/Years breakdown with PWA offline support.",
+  "name": "Meenakshi Finance - வட்டி கணக்கிடும் பயன்பாடு + QR",
+  "short_name": "Meenakshi QR",
+  "description": "Tamil-first interest calculator with QR receipt & WhatsApp share. Duration field shows human-readable period.",
   "start_url": "./index.html?source=pwa",
   "scope": "./",
   "display": "standalone",
