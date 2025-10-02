@@ -5,9 +5,19 @@
   <title>Meenakshi Finance - வட்டி கணக்கிடும் பயன்பாடு</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0ea5e9" />
+
+  <!-- iOS PWA meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Meenakshi Finance">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+
+  <!-- Manifest -->
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+  <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
   <style>
     body { background: #f5f6fa; }
     .app-card { border-radius: 16px; }
@@ -26,6 +36,7 @@
     .input-group .form-control { border-top-right-radius: 0; border-bottom-right-radius: 0; }
     .input-group .btn-outline-secondary { border-top-left-radius: 0; border-bottom-left-radius: 0; }
     .breakdown { font-size: 1.1rem; font-weight: 700; color:#111; margin-bottom: 6px; }
+    .install-card { display:none; }
   </style>
 </head>
 <body>
@@ -33,24 +44,40 @@
     <div class="card shadow app-card">
       <div class="card-body p-4">
         <h1 class="h3 text-center app-title mb-2">Meenakshi Finance</h1>
-        <h2 class="h5 text-center text-secondary mb-4">வட்டி கணக்கிடும் பயன்பாடு</h2>
+        <h2 class="h5 text-center text-secondary mb-3">வட்டி கணக்கிடும் பயன்பாடு</h2>
 
-        <div class="d-grid mb-3">
+        <!-- Install buttons / help -->
+        <div class="d-grid gap-2 mb-3">
           <button id="btnInstall" class="btn btn-primary btn-lg" style="display:none;">பயன்பாட்டை நிறுவ (Install App)</button>
         </div>
 
-        <div class="mb-3">
+        <!-- Install help card (shown when prompt doesn't fire or on iOS) -->
+        <div id="installHelp" class="card border-info install-card">
+          <div class="card-body">
+            <div class="h6 mb-2">📲 நிறுவும் வழிமுறை</div>
+            <ol class="mb-0">
+              <li><strong>Android (Chrome):</strong> உலாவியில் <em>⋮</em> மெனு → <strong>Add to Home screen</strong>.</li>
+              <li><strong>iPhone/iPad (Safari):</strong> <em>Share</em> → <strong>Add to Home Screen</strong>.</li>
+            </ol>
+            <div class="hint mt-2">கவனம்: GitHub, Facebook, Instagram போன்ற in-app browsers-ல் நிறுவல் காணப்படாது. Chrome/Safari-யில் திறக்கவும்.</div>
+          </div>
+        </div>
+
+        <!-- Amount -->
+        <div class="mb-3 mt-3">
           <label for="amount" class="form-label">தொகை</label>
           <input id="amount" type="number" inputmode="decimal" class="form-control form-control-lg" placeholder="உதா: 43000">
           <div id="errAmount" class="error mt-1"></div>
         </div>
 
+        <!-- Fixed rate -->
         <div class="mb-3">
           <label for="rate" class="form-label">வட்டி விகிதம் (%)</label>
           <input id="rate" type="number" class="form-control form-control-lg" value="1.25" readonly>
           <div class="hint mt-1">விகிதம் எப்போதும் 1.25% (மாதாந்திர அடிப்படை)</div>
         </div>
 
+        <!-- Start date with auto-slash DD/MM/YYYY and native calendar -->
         <div class="mb-3">
           <label for="startDateText" class="form-label">அடகு பிடிப்பு தேதி</label>
           <div class="input-group">
@@ -63,17 +90,20 @@
           <input id="startDateNative" type="date" class="visually-hidden" />
         </div>
 
+        <!-- Today -->
         <div class="mb-3">
           <label for="today" class="form-label">இன்று</label>
           <input id="today" type="date" class="form-control form-control-lg" readonly>
         </div>
 
+        <!-- Auto days -->
         <div class="mb-4">
           <label class="form-label">நாட்கள் (தானாக கணக்கிடப்பட்டது)</label>
           <input id="autoDays" type="number" class="form-control form-control-lg" readonly>
           <div id="durationLine" class="breakdown"></div>
         </div>
 
+        <!-- Results -->
         <div id="results" class="card border-0 bg-light-subtle" style="display:none;">
           <div class="card-body">
             <div class="kv"><div>முதல்தொகை</div><div id="outPrincipal" class="meta-number">—</div></div>
@@ -119,21 +149,57 @@
   </div>
 
   <script>
-    // PWA
+    // ---- PWA install logic with fallback help card ----
     let deferredPrompt = null;
     const installBtn = document.getElementById('btnInstall');
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block';
-    });
-    installBtn && installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice;
-      deferredPrompt = null; installBtn.style.display = 'none';
-    });
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    const installHelp = document.getElementById('installHelp');
+
+    function isInStandalone() {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+             || window.navigator.standalone === true;
+    }
+    function isIos() {
+      return /iphone|ipad|ipod/i.test(navigator.userAgent);
+    }
+    function isInAppBrowser() {
+      const ua = navigator.userAgent.toLowerCase();
+      return ua.includes('fbav') || ua.includes('instagram') || ua.includes('twitter') || ua.includes('linkedin') || ua.includes('pinterest');
     }
 
-    // Helpers
+    // Show help if:
+    // - iOS (no beforeinstallprompt), OR
+    // - No prompt fired after a short delay, OR
+    // - Opened in in-app browser
+    function maybeShowHelp() {
+      if (isInStandalone()) return; // Already installed
+      if (isIos() || isInAppBrowser()) { installHelp.style.display = 'block'; return; }
+      // If no prompt after 3s, show help
+      setTimeout(()=>{ if (!deferredPrompt) installHelp.style.display = 'block'; }, 3000);
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+
+    installBtn && installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = 'none';
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').finally(maybeShowHelp);
+      });
+    } else {
+      maybeShowHelp();
+    }
+
+    // ---- App logic (unchanged) ----
     function formatINR(v){ return new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"}).format(v); }
     function r2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
     function pad2(n){ return String(n).padStart(2,'0'); }
@@ -164,7 +230,6 @@
     function humanMD(days){ const {m,d}=breakdownMonths(days); return m>0 ? (d>0?`${m} மாதம் ${d} நாள்`:`${m} மாதம்`) : `${d} நாள்`; }
     function humanYMD(days){ const {y,m,d}=breakdownYears(days); return `${y} வருடம் ${m} மாதம் ${d} நாள்`; }
 
-    // Elements
     const els = {
       amount: document.getElementById('amount'),
       rate: document.getElementById('rate'),
