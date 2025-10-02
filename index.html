@@ -39,6 +39,7 @@
       border: 1px solid #ccc; border-radius: 8px; background: #fafafa;
     }
     .kv { display: flex; justify-content: space-between; padding: 8px 0; font-size: 18px; }
+    .highlight { font-size: 22px; font-weight: bold; color: #000; }
     .note { margin-top: 12px; font-size: 14px; color: #555; }
     .error { color: red; font-size: 14px; margin-top: 4px; }
   </style>
@@ -67,15 +68,6 @@
       <option value="perDay">ஒரு நாள்</option>
     </select>
 
-    <div id="dayCountWrap">
-      <label for="dayCount">நாள் கணக்கீடு முறை</label>
-      <select id="dayCount">
-        <option value="A365">Actual/365</option>
-        <option value="A360">Actual/360</option>
-      </select>
-      <div class="note">இது ஆண்டு அடிப்படைக்கு மட்டும் பொருந்தும்.</div>
-    </div>
-
     <button id="btnCalc">கணக்கிடு</button>
     <button id="btnReset" type="button">மீட்டமை</button>
 
@@ -84,28 +76,23 @@
       <div class="kv"><div>வட்டி விகிதம்</div><div id="outRateVal">—</div></div>
       <div class="kv"><div>நாட்கள்</div><div id="outDaysVal">—</div></div>
       <div class="kv"><div>அடிப்படை</div><div id="outBasisVal">—</div></div>
-      <div class="kv"><div>வட்டி</div><div id="outInterestVal">—</div></div>
-      <div class="kv"><div>மொத்தம் (முதல்தொகை + வட்டி)</div><div id="outTotalVal">—</div></div>
+      <div class="kv highlight"><div>வட்டி</div><div id="outInterestVal">—</div></div>
+      <div class="kv highlight"><div>மொத்தம் (முதல்தொகை + வட்டி)</div><div id="outTotalVal">—</div></div>
     </div>
 
     <div class="note">
       மொத்தம் கணக்கிடும் முறை:  
-      ஆண்டு → நாட்கள்/365 (அல்லது 360).  
+      ஆண்டு → நாட்கள்/365.  
       மாதம் → நாட்கள்/30.  
       நாள் → நாட்கள் (வட்டி தினசரி).  
     </div>
   </div>
 
 <script>
-function toggleDayCount(){
-  document.getElementById('dayCountWrap').style.display =
-    (document.getElementById('basis').value === 'perAnnum') ? '' : 'none';
-}
-
-function calcInterest(principal, ratePct, days, basis, dayCount){
+function calcInterest(principal, ratePct, days, basis){
   const p = Number(principal), r = Number(ratePct)/100, d = Number(days);
   let t = 0;
-  if (basis === 'perAnnum') t = d / (dayCount === 'A360' ? 360 : 365);
+  if (basis === 'perAnnum') t = d / 365;   // always 365 days
   else if (basis === 'perMonth') t = d / 30;
   else t = d; // per day
   return p * r * t;
@@ -120,9 +107,8 @@ document.getElementById('btnCalc').addEventListener('click', ()=>{
   const rate = document.getElementById('rate').value;
   const days = document.getElementById('days').value;
   const basis = document.getElementById('basis').value;
-  const dayCount = document.getElementById('dayCount').value;
 
-  // Validation with Tamil messages
+  // Validation
   let valid = true;
   document.getElementById('errAmount').innerText = "";
   document.getElementById('errRate').innerText = "";
@@ -143,7 +129,7 @@ document.getElementById('btnCalc').addEventListener('click', ()=>{
 
   if(!valid) return;
 
-  const interest = calcInterest(amount, rate, days, basis, dayCount);
+  const interest = calcInterest(amount, rate, days, basis);
   const total = Number(amount) + interest;
 
   document.getElementById('outPrincipalVal').innerText = formatINR(amount);
@@ -161,15 +147,11 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
   document.getElementById('rate').value = "";
   document.getElementById('days').value = "";
   document.getElementById('basis').value = "perAnnum";
-  document.getElementById('dayCount').value = "A365";
   document.getElementById('results').style.display = 'none';
   document.getElementById('errAmount').innerText = "";
   document.getElementById('errRate').innerText = "";
   document.getElementById('errDays').innerText = "";
 });
-
-document.getElementById('basis').addEventListener('change', toggleDayCount);
-toggleDayCount();
 </script>
 </body>
 </html>
