@@ -1,1 +1,391 @@
-<!DOCTYPE html><html lang='ta'><head><meta charset='UTF-8'><title>Meenakshi Finance</title><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='manifest' href='./manifest.webmanifest'><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'><script src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js' defer></script><style>body{background:#f5f6fa}.app-card{border-radius:16px}.form-label{font-weight:700}.readonly{background:#eef2f7!important;color:#6b7280!important;border-color:#e5e7eb!important;cursor:not-allowed}</style></head><body><div class='container my-4'><div class='card shadow app-card'><div class='card-body p-4'><h1 class='h4 text-center mb-3'>Meenakshi Finance</h1><p class='text-center text-muted mb-3'>v6.1 ready app — open with Live Server</p><iframe srcdoc="<p style='text-align:center;color:#555;'>Right-click index.html → Open with Live Server to run.</p>" style='width:100%;height:60px;border:none;'></iframe></div></div></div></body></html>
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <title>மீனாட்சி பைனான்ஸ் • வட்டி கணக்கிடுதல் + QR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Meenakshi QR">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+  <style>
+    :root{--base:18px;--round:16px}
+    html,body{height:100%}
+    body{background:#f6f7fb;font-size:var(--base)}
+    .app-card{border-radius:var(--round)}
+    .brand-ta{font-weight:900;letter-spacing:.2px}
+    .brand-en{font-weight:700;color:#6b7280}
+    .sticky-cta{position:sticky;bottom:0;z-index:20;background:linear-gradient(180deg, rgba(246,247,251,0) 0%, #f6f7fb 40%);padding-top:.5rem}
+    .readonly{background:#eef2f7!important;color:#374151!important;border-color:#e5e7eb!important;cursor:not-allowed}
+    .hint{color:#6b7280;font-size:.95rem;display:none}
+    .error{color:#b91c1c;font-size:.95rem;display:none}
+    .section-title{font-weight:800}
+    .kv{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px dashed #e5e7eb}
+    .kv:last-child{border-bottom:0}
+    .big-number{font-weight:900;font-size:clamp(1.6rem,6vw,2.2rem)}
+    .summary-banner{background:#fff9e6;border:2px solid #facc15;color:#1f2937;border-radius:12px;padding:10px 12px;font-weight:900;font-size:1.2rem}
+    .qr-box{display:none}
+    .form-control, .btn{min-height:48px}
+    .safe-pad{padding-bottom:env(safe-area-inset-bottom)}
+  </style>
+</head>
+<body>
+  <div class="container py-3">
+    <div class="card shadow app-card">
+      <div class="card-body p-3">
+        <div class="text-center mb-1">
+          <div class="h4 brand-ta mb-0">மீனாட்சி பைனான்ஸ்</div>
+          <div class="small brand-en">Meenakshi Finance</div>
+        </div>
+        <p class="text-center text-muted mb-3">மொபைல் பயன்பாட்டிற்கு ஏற்ற எளிய வட்டி கணக்கீட்டு + QR ரசீது</p>
+
+        <!-- Porul (Product details) - collapsible, hidden by default -->
+        <div class="accordion mb-3" id="porulAcc">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="porulHead">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#porulBody" aria-expanded="false" aria-controls="porulBody">
+                பொருள் (Porul) — விருப்பத் தகவல்கள்
+              </button>
+            </h2>
+            <div id="porulBody" class="accordion-collapse collapse" aria-labelledby="porulHead" data-bs-parent="#porulAcc">
+              <div class="accordion-body">
+                <div class="mb-3">
+                  <label for="receiptId" class="form-label">ரசீது எண்</label>
+                  <input id="receiptId" type="text" class="form-control form-control-lg" placeholder="உதா: MF-2025-001">
+                </div>
+                <div class="mb-3">
+                  <label for="customerName" class="form-label">வாடிக்கையாளர் பெயர்</label>
+                  <input id="customerName" type="text" class="form-control form-control-lg" placeholder="உதா: Kumar">
+                </div>
+                <div class="mb-1">
+                  <label for="itemDesc" class="form-label">பொருள்/அடகு விவரம்</label>
+                  <input id="itemDesc" type="text" class="form-control form-control-lg" placeholder="உதா: தங்க சங்கிலி 20g">
+                </div>
+                <div class="hint mt-2" style="display:block">இந்த பகுதி அவசியமல்ல. தேவையான போதுதான் நிரப்பவும்.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Interest Calculator (always visible) -->
+        <div class="mb-3">
+          <label for="amount" class="form-label">முதல்தொகை (₹)</label>
+          <input id="amount" type="number" inputmode="decimal" class="form-control form-control-lg" placeholder="உதா: 43000">
+          <div id="errAmount" class="error mt-1">சரியான தொகையை உள்ளிடவும் (0-ஐ விட அதிகமாக).</div>
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label for="rate" class="form-label">வட்டி (%)</label>
+            <input id="rate" type="text" class="form-control form-control-lg readonly" value="1.25" disabled aria-readonly="true">
+          </div>
+          <div class="col-6">
+            <label for="oneMonthInterest" class="form-label">1 மாத வட்டி</label>
+            <input id="oneMonthInterest" type="text" class="form-control form-control-lg readonly" readonly placeholder="—">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="startDateText" class="form-label">அடகு பிடிப்பு தேதி</label>
+          <div class="input-group">
+            <input id="startDateText" type="text" inputmode="numeric" class="form-control form-control-lg" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off">
+            <button class="btn btn-outline-secondary" type="button" id="openCalendar">📅</button>
+          </div>
+          <div id="hintDateFmt" class="hint mt-1">தேதி வடிவம்: DD/MM/YYYY (உதா: 05/08/2025)</div>
+          <div id="errStart" class="error mt-1">தேதி தவறானது அல்லது வருங்கால தேதியாக இருக்கக் கூடாது.</div>
+          <input id="startDateNative" type="date" class="visually-hidden" />
+        </div>
+        <div class="row g-2 mb-2">
+          <div class="col-6">
+            <label for="today" class="form-label">இன்று</label>
+            <input id="today" type="date" class="form-control form-control-lg readonly" readonly>
+          </div>
+          <div class="col-6">
+            <label for="durationText" class="form-label">காலம்</label>
+            <input id="durationText" type="text" class="form-control form-control-lg readonly" readonly placeholder="—">
+          </div>
+        </div>
+        <input id="autoDays" type="number" class="visually-hidden" readonly>
+        <div id="durationLine" class="summary-banner mb-3" style="display:none"></div>
+
+        <!-- Results (auto) -->
+        <div id="results" class="card border-0 bg-light-subtle" style="display:none;">
+          <div class="card-body">
+            <div class="kv"><div>முதல்தொகை</div><div id="outPrincipal" class="fw-bold">—</div></div>
+            <div class="kv"><div>வட்டி விகிதம்</div><div id="outRate" class="fw-bold">—</div></div>
+            <div class="kv"><div>காலம்</div><div id="outDuration" class="fw-bold">—</div></div>
+            <div id="cardDaily" class="card mt-3"><div class="card-body"><div class="section-title mb-1">தினசரி</div><div id="dyBreakdown" class="fw-bold">—</div><div class="kv"><div>மொத்த வட்டி</div><div id="dyInterest" class="big-number">—</div></div><div class="kv"><div class="text-secondary">மொத்தம் (முதல்தொகை + வட்டி)</div><div id="dyTotal" class="fw-bold">—</div></div></div></div>
+            <div id="cardMonthly" class="card mt-3"><div class="card-body"><div class="section-title mb-1">மாதாந்திர (30 நாள்)</div><div id="moBreakdown" class="fw-bold">—</div><div class="kv"><div>மொத்த வட்டி</div><div id="moInterest" class="big-number">—</div></div><div class="kv"><div class="text-secondary">மொத்தம் (முதல்தொகை + வட்டி)</div><div id="moTotal" class="fw-bold">—</div></div></div></div>
+            <div id="cardYearly" class="card mt-3"><div class="card-body"><div class="section-title mb-1">வருடாந்திர (365 நாள்)</div><div id="yrBreakdown" class="fw-bold">—</div><div class="kv"><div>மொத்த வட்டி</div><div id="yrInterest" class="big-number">—</div></div><div class="kv"><div class="text-secondary">மொத்தம் (முதல்தொகை + வட்டி)</div><div id="yrTotal" class="fw-bold">—</div></div></div></div>
+          </div>
+        </div>
+
+        <!-- Actions: sticky for mobile -->
+        <div class="sticky-cta safe-pad pt-2">
+          <div class="d-grid gap-2">
+            <button id="btnGenQR" class="btn btn-primary btn-lg" type="button">QR உருவாக்கு & WhatsApp</button>
+            <button id="btnReset" class="btn btn-outline-secondary btn-lg" type="button">மீட்டமை</button>
+          </div>
+        </div>
+
+        <!-- QR Result -->
+        <div id="qrSection" class="qr-box card mt-3">
+          <div class="card-body text-center">
+            <div class="h6 mb-2">QR ரசீது</div>
+            <div id="qrcode" class="d-inline-block p-2 bg-white rounded border"></div>
+            <div class="d-grid gap-2 mt-3">
+              <a id="downloadQR" class="btn btn-success btn-sm" download="meenakshi-receipt-qr.png">QR பதிவிறக்கு (PNG)</a>
+              <button id="btnWA" class="btn btn-success btn-lg" type="button">WhatsApp-ல் அனுப்பு</button>
+              <button id="btnShare" class="btn btn-outline-primary btn-sm" type="button">Share (Android/iOS)</button>
+              <textarea id="receiptText" class="form-control mt-2" rows="6" readonly></textarea>
+              <button id="copyText" class="btn btn-outline-secondary btn-sm" type="button">உரை நகலெடு (Copy)</button>
+            </div>
+            <div class="hint mt-2" style="display:block;">கவனம்: WhatsApp தானாக அனுப்ப முடியாது; இந்த பொத்தானால் செய்தி முன் நிரப்பப்பட்டு திறக்கும்.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Helpers ----------
+    const INR = new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR"});
+    const r2 = x => Math.round((x+Number.EPSILON)*100)/100;
+    const pad2 = n => String(n).padStart(2,"0");
+    const toISO = d => `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+    const diffDays = (s,e)=> Math.floor((Date.UTC(e.getFullYear(),e.getMonth(),e.getDate()) - Date.UTC(s.getFullYear(),s.getMonth(),s.getDate()))/86400000);
+    function parseDMY(str){ if(!/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return null; const [dd,mm,yyyy] = str.split('/').map(Number); const d = new Date(yyyy, mm-1, dd); return (d.getFullYear()===yyyy && d.getMonth()+1===mm && d.getDate()===dd) ? d : null; }
+    function autoFormatDMY(input){ let v = input.value.replace(/[^\d]/g,'').slice(0,8); if (v.length >= 5) v = v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4); else if (v.length >= 3) v = v.slice(0,2)+'/'+v.slice(2); input.value = v; }
+    const $ = id => document.getElementById(id);
+
+    // ---------- Elements ----------
+    const els = { receiptId: $('receiptId'), customerName: $('customerName'), itemDesc: $('itemDesc'), amount: $('amount'), rate: $('rate'), oneMonthInterest: $('oneMonthInterest'), startDateText: $('startDateText'), startDateNative: $('startDateNative'), openCalendar: $('openCalendar'), today: $('today'), durationText: $('durationText'), autoDays: $('autoDays'), errAmount: $('errAmount'), errStart: $('errStart'), hintDateFmt: $('hintDateFmt'), results: $('results'), outPrincipal: $('outPrincipal'), outRate: $('outRate'), outDuration: $('outDuration'), dyBreakdown: $('dyBreakdown'), moBreakdown: $('moBreakdown'), yrBreakdown: $('yrBreakdown'), dyInterest: $('dyInterest'), dyTotal: $('dyTotal'), moInterest: $('moInterest'), moTotal: $('moTotal'), yrInterest: $('yrInterest'), yrTotal: $('yrTotal'), btnReset: $('btnReset'), durationLine: $('durationLine'), btnGenQR: $('btnGenQR'), qrSection: $('qrSection'), qrcodeBox: $('qrcode'), downloadQR: $('downloadQR'), btnWA: $('btnWA'), btnShare: $('btnShare'), receiptText: $('receiptText') };
+
+    // ---------- Init Today ----------
+    function setTodayAndMax(force=false){ const now = new Date(); const iso = now.toISOString().slice(0,10); if (force || !els.today.value) els.today.value = iso; els.startDateNative.max = iso; }
+    document.addEventListener('visibilitychange', ()=>{ if(!els.today.value) setTodayAndMax(true); });
+
+    // ---------- Validation ----------
+    const setVis = (el, show)=> el.style.display = show ? 'block' : 'none';
+    function validate(showErrors){ let ok = true; if(!(els.amount.value && Number(els.amount.value) > 0)){ ok=false; if(showErrors) setVis(els.errAmount,true); else setVis(els.errAmount,false); } else if(showErrors) setVis(els.errAmount,false); const d = parseDMY(els.startDateText.value); const t = new Date(els.today.value || new Date().toISOString().slice(0,10)); if(!d || d>t){ ok=false; if(showErrors){ setVis(els.errStart,true); setVis(els.hintDateFmt, !d); } } else if(showErrors){ setVis(els.errStart,false); setVis(els.hintDateFmt,false); } return ok; }
+
+    // ---------- Calculations ----------
+    function updateOneMonthInterest(){ const P = Number(els.amount.value||0); const monthly = P * (1.25/100); els.oneMonthInterest.value = P>0 ? INR.format(r2(monthly)) : ""; }
+
+    function humanYMD(y,m,d){
+      const parts = [];
+      if (y) parts.push(`${y} வருடம்`);
+      if (m) parts.push(`${m} மாதம்`);
+      parts.push(`${d} நாள்`);
+      return parts.join(' ');
+    }
+
+    function recalcQuietly(){
+      if(!(els.amount.value && Number(els.amount.value) > 0)) { els.results.style.display="none"; setVis(els.durationLine,false); return null; }
+      if(!els.today.value) setTodayAndMax(true);
+      const d = parseDMY(els.startDateText.value);
+      const t = new Date(els.today.value);
+      if(!d || d>t){ els.results.style.display="none"; setVis(els.durationLine,false); return null; }
+
+      const P = Number(els.amount.value), rate = 1.25;
+      const days = diffDays(d,t);
+      els.autoDays.value = days;
+
+      // Break into Y/M/D (30-day month, 365-day year)
+      let rem = days;
+      const y = Math.floor(rem/365); rem -= y*365;
+      const m = Math.floor(rem/30);  rem -= m*30;
+      const dd = rem;
+
+      // Human duration texts
+      const durFull = humanYMD(y,m,dd); // exact Y/M/D for the field
+      els.durationText.value = durFull || "—";
+      els.durationLine.innerHTML = `🗓️ <b>${durFull}</b> • வட்டி 1.25%`; setVis(els.durationLine,true);
+
+      // Interest math
+      const monthly = P*(rate/100);
+      const daily   = monthly/30;
+      const yearly  = daily*365;
+
+      const intDays = r2(daily*days);
+      const intMons = r2(monthly*(days/30));
+      const intYear = r2(yearly*(days/365));
+
+      // Results
+      els.outPrincipal.textContent = INR.format(P);
+      els.outRate.textContent = rate + "%";
+      els.outDuration.textContent = `${durFull} (${days} நாள்)`;
+
+      els.dyBreakdown.textContent = `நாட்கள்: ${days}`;
+      els.moBreakdown.textContent = `மாத அளவு: ${Math.floor(days/30)}`;
+      els.yrBreakdown.textContent = `வருட அளவு: ${Math.floor(days/365)}`;
+
+      els.dyInterest.textContent = INR.format(intDays);
+      els.dyTotal.textContent    = INR.format(r2(P + intDays));
+      els.moInterest.textContent = INR.format(intMons);
+      els.moTotal.textContent    = INR.format(r2(P + intMons));
+      els.yrInterest.textContent = INR.format(intYear);
+      els.yrTotal.textContent    = INR.format(r2(P + intYear));
+
+      // Choose card to show
+      const mode = days>=365 ? 'year' : (days>=30 ? 'month' : 'day');
+      document.getElementById('cardDaily').style.display   = (mode==='day')   ? 'block' : 'none';
+      document.getElementById('cardMonthly').style.display = (mode==='month') ? 'block' : 'none';
+      document.getElementById('cardYearly').style.display  = (mode==='year')  ? 'block' : 'none';
+
+      els.results.style.display = "block";
+
+      return { P, rate, days,
+        daily:intDays, monthly:intMons, yearly:intYear,
+        totalDaily:r2(P+intDays), totalMonthly:r2(P+intMons), totalYearly:r2(P+intYear),
+        dStr: els.startDateText.value,
+        tStr: els.today.value.split('-').reverse().join('/'),
+        durText: durFull
+      };
+    }
+
+    // ---------- QR / WA ----------
+    function buildReceiptText(calc){
+      const id   = (els.receiptId?.value||'—').trim();
+      const name = (els.customerName?.value||'—').trim();
+      const item = (els.itemDesc?.value||'—').trim();
+      return [
+        "Meenakshi Finance - ரசீது","---------------------------",
+        `ரசீது எண்: ${id}`,
+        `வாடிக்கையாளர்: ${name}`,
+        `பொருள்/அடகு: ${item}`,
+        `முதல்தொகை: ${INR.format(calc.P)}`,
+        `வட்டி விகிதம்: ${calc.rate}% (மாதாந்திர)`,
+        `அடகு தேதி: ${calc.dStr}`,
+        `இன்று: ${calc.tStr}`,
+        `காலம்: ${calc.durText} (${calc.days} நாள்)`,
+        "",
+        "மொத்தங்கள் (கணக்கீட்டுக் குறிப்புகள்):",
+        `• தினசரி: ${INR.format(calc.daily)} | மொத்தம்: ${INR.format(calc.totalDaily)}`,
+        `• மாதாந்திர: ${INR.format(calc.monthly)} | மொத்தம்: ${INR.format(calc.totalMonthly)}`,
+        `• வருடாந்திர: ${INR.format(calc.yearly)} | மொத்தம்: ${INR.format(calc.totalYearly)}`
+      ].join("\n");
+    }
+    function ensureQRCodeLib(cb){
+      if (window.QRCode) return cb();
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js';
+      s.onload = () => cb();
+      s.onerror = () => alert('QR library load failed.');
+      document.head.appendChild(s);
+    }
+    function generateQR(text){
+      els.qrcodeBox.innerHTML = "";
+      new QRCode(els.qrcodeBox, { text, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+      setTimeout(()=>{
+        const img = els.qrcodeBox.querySelector('img');
+        const cvs = els.qrcodeBox.querySelector('canvas');
+        const dataURL = (img && img.src) || (cvs && cvs.toDataURL('image/png'));
+        if (dataURL) els.downloadQR.href = dataURL;
+      }, 300);
+    }
+    function openWhatsApp(text){
+      // No predefined phone → lets user choose contact
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+
+    // ---------- Bindings ----------
+    function bindDateInputs(){
+      ['input','keyup','paste'].forEach(ev=>{
+        els.startDateText.addEventListener(ev, () => {
+          autoFormatDMY(els.startDateText);
+          const d = parseDMY(els.startDateText.value);
+          if (d) els.startDateNative.value = toISO(d);
+          updateOneMonthInterest();
+          recalcQuietly();
+        }, {passive:true});
+      });
+
+      els.openCalendar.addEventListener('click', () => {
+        try {
+          if (typeof els.startDateNative.showPicker === 'function') els.startDateNative.showPicker();
+          else els.startDateNative.click();
+        } catch(_) { els.startDateNative.click(); }
+      });
+
+      els.startDateNative.addEventListener('change', () => {
+        const v = els.startDateNative.value;
+        if(v){
+          const [yyyy,mm,dd] = v.split('-');
+          els.startDateText.value = `${dd}/${mm}/${yyyy}`;
+        }
+        updateOneMonthInterest();
+        recalcQuietly();
+      });
+    }
+
+    function wireButtons(){
+      els.btnGenQR.addEventListener('click', ()=>{
+        if(!els.today.value) setTodayAndMax(true);
+        const ok = validate(true);
+        if(!ok){
+          if(els.errAmount.style.display==='block') els.amount.focus();
+          else if(els.errStart.style.display==='block') els.startDateText.focus();
+          return;
+        }
+        const calc = recalcQuietly(); if(!calc) return;
+        const receipt = buildReceiptText(calc);
+        document.getElementById('qrSection').style.display = "block";
+        els.receiptText.value = receipt;
+        ensureQRCodeLib(()=> generateQR(receipt));
+        els.btnWA.onclick = ()=> openWhatsApp(receipt);
+        els.btnShare.onclick = async ()=>{
+          if(navigator.share){
+            try{ await navigator.share({ text: receipt, title: "Meenakshi Finance - Receipt" }); }catch(e){}
+          } else { alert("Share API not supported. Use WhatsApp button or copy text."); }
+        };
+      });
+
+      els.copyText.addEventListener('click', async ()=>{
+        try{
+          await navigator.clipboard.writeText(els.receiptText.value || "");
+          document.getElementById('copyText').textContent = "நகலெடுக்கப்பட்டது ✓";
+          setTimeout(()=> document.getElementById('copyText').textContent = "உரை நகலெடு (Copy)", 1500);
+        }catch(e){ alert("க்ளிப்போர்டில் காப்பி செய்ய முடியவில்லை."); }
+      });
+
+      els.btnReset.addEventListener('click', ()=>{
+        els.amount.value = "";
+        els.startDateText.value = "";
+        els.startDateNative.value = "";
+        els.durationText.value = "";
+        els.autoDays.value = "";
+        els.oneMonthInterest.value = "";
+        els.receiptId && (els.receiptId.value = "");
+        els.customerName && (els.customerName.value = "");
+        els.itemDesc && (els.itemDesc.value = "");
+        [els.errAmount, els.errStart, els.hintDateFmt].forEach(x=> x.style.display='none');
+        els.results.style.display = "none";
+        document.getElementById('qrSection').style.display = "none";
+        els.qrcodeBox.innerHTML = "";
+        els.receiptText.value = "";
+        setVis(els.durationLine,false);
+        setTodayAndMax(true);
+      });
+
+      els.amount.addEventListener('input', ()=>{ updateOneMonthInterest(); recalcQuietly(); });
+    }
+
+    function init(){
+      setTodayAndMax(true);
+      bindDateInputs();
+      wireButtons();
+      updateOneMonthInterest();
+      recalcQuietly();
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      }
+    }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
